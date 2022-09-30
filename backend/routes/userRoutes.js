@@ -8,10 +8,9 @@ const {
   loginUser,
   VerifyPhone,
   cheackOtp,
-  addToCart,
-  getCartProduct,
-  removeProductCart,
-  getCartCount,
+  // getCartProduct,
+  // removeProductCart,
+  // getCartCount,
   PaytmIntegration,
   Callbackfunction,
   getTodayDeals,
@@ -22,11 +21,11 @@ const {
   changePassword,
   ResetOtpSend,
   DeleteuserAddress,
-  getMyOrders
+  getMyOrders,
+  getMyorderProduts
   
 } = require("../controllers/userControllers");
 const {verifyToken}=require("../middleware/tokenVerification")
-
 //login routes using email,pssword
 router.route("/login").post(loginUser);
 // user registration routes using email,password,name,phonenumber
@@ -39,16 +38,14 @@ router.route("/register/:otp").post(Phoneverification);
 router.route("/otpLogin").post(VerifyPhone);
 // verifying otp routes;
 router.route("/otpLogin/:otp").post(cheackOtp);
-//add to cart routes 
-router.route('/addToCart').post(addToCart);
 //view all products
 router.route("/view-all-products").get(viewAllProducts)
-//getCartProducts
-router.route('/getCartProducts/:id').get(getCartProduct);
-//remove Product from cart
-router.route('/removeCartProduct').post(removeProductCart);
-//get Cart Count
-router.route('/getCartCount').post(getCartCount)
+// //getCartProducts
+// router.route('/getCartProducts/:id').get(getCartProduct);
+// //remove Product from cart
+// router.route('/removeCartProduct').post(removeProductCart);
+// //get Cart Count
+// router.route('/getCartCount').post(getCartCount)
 //user Profile deatails routes
 router.route('/user-deatails-get').post(TakeUserDeatails)
 //pytm integration routes 
@@ -71,6 +68,8 @@ router.route("/view-all-bottom-banner").get(ViewBottomBanner)
 router.route("/delete-user-addres").post(verifyToken,DeleteuserAddress)
 //get my order routes function
 router.route("/get-my-orders/:id").get(getMyOrders)
+//my orders products viewing
+router.route("/view-my-orders-products").get(getMyorderProduts)
 
    
 

@@ -3,8 +3,7 @@ const dotenv = require("dotenv");
 const db = require("./config/db");
 const session = require("express-session");
 const userRoutes = require("./routes/userRoutes");
-const wholesaler=require("./routes/wholesaleRoutes")
-const admin=require('./routes/adminRoutes')
+
 const superAdmin=require('./routes/superAdminRoutes')
 const path=require('path')
 const { notFound,errorHandler } = require("./errormiddleware/errorMidlleware");
@@ -27,9 +26,7 @@ app.use(
   }) 
 );
 
-app.use("/api/user",userRoutes);
-app.use("/api/wholesaler",wholesaler); 
-app.use("/api/admin",admin);   
+app.use("/api/user",userRoutes);  
 app.use("/api/superAdmin",superAdmin); 
 
 //  ------------------deployment-----------------------

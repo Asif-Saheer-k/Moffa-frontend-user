@@ -32,7 +32,9 @@ const {
   EditBottomBanner,
   getAllOutStock,
   UpdateStock,
-  DeleteStock
+  DeleteStock,
+  DispatchOrder,
+  viewALLDispatchOrders,
   
 } = require("../controllers/superAdminControllers");
 
@@ -102,6 +104,11 @@ router.route('/view-outof-stock').get(verifyToken,getAllOutStock)
 router.route('/update-outof-stock').patch(verifyToken,UpdateStock)
 //delete stock updation
 router.route('/delete-outof-stock').post(verifyToken,DeleteStock)
+//order dispatch function
+router.route('/dispatch-order').post(verifyToken,DispatchOrder)
+//view dispatch orders
+router.route('/view-dispatch-orders').get(verifyToken,viewALLDispatchOrders)
+
 
 module.exports = router;  
    

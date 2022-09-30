@@ -5,7 +5,6 @@ const generateToken = require("../utils/jwtToken");
 const collection = require("../config/collection");
 const objectId = require("mongodb").ObjectId;
 const verification = require("../middleware/tiwllioVerification");
-const { v1: uuidv1 } = require("uuid");
 
 //super Admin Login function
 const verifyAdmin = asyncHandler(async (req, res) => {
@@ -144,17 +143,24 @@ const deleteuser = asyncHandler(async (req, res) => {
 //add banner function
 const addBanner = asyncHandler(async (req, res) => {
   const banner = req.body;
-  return new Promise(async (resp, reject) => {
-    db.get()
+  const ProID = banner.url;
+  const Product = await db
+    .get()
+    .collection(collection.PRODUCT_COLLECTION)
+    .findOne({ id: ProID });
+  if (Product) {
+    const bannerDeatails = await db
+      .get()
       .collection(collection.BANNER_COLLECTION)
-      .insertOne(banner)
-      .then((resp) => {
-        res.status(200).json("success");
-      })
-      .catch((error) => {
-        res.status(401).json("Somthing went wrong");
-      });
-  });
+      .insertOne(banner);
+    if (bannerDeatails) {
+      res.status(200).json("success");
+    } else {
+      res.status(401).json("Somthing went wrong");
+    }
+  } else {
+    res.status(404).json("Product Id Invalid");
+  }
 });
 
 //view all banner
@@ -262,10 +268,11 @@ const addProducts = asyncHandler(async (req, res) => {
     const inc = parseInt(PR) + 1;
 
     product.id = "PRO_ID" + inc;
-  } else { 
+  } else {
     product.id = "PRO_ID100000";
   }
   product.Deal = [];
+  product.hidden = false;
   return new Promise(async (resolve, reject) => {
     await db
       .get()
@@ -285,7 +292,7 @@ const viewAllProducts = asyncHandler(async (req, res) => {
   const products = await db
     .get()
     .collection(collection.PRODUCT_COLLECTION)
-    .find()
+    .find({ hidden: false })
     .toArray();
   if (products) {
     res.status(200).json(products);
@@ -297,11 +304,10 @@ const viewAllProducts = asyncHandler(async (req, res) => {
 //delete Products
 const deleteProduct = asyncHandler(async (req, res) => {
   const productId = req.params.id;
-
   await db
     .get()
     .collection(collection.PRODUCT_COLLECTION)
-    .deleteOne({ id: productId })
+    .updateOne({ id: productId }, { $set: { hidden: true } })
     .then((resp) => {
       if (resp) {
         res.status(200).json({
@@ -379,34 +385,16 @@ const deleteWholesalers = asyncHandler((req, res) => {
 });
 const makeUser = asyncHandler(async (req, res) => {
   const Id = req.params.id;
-
-  const wholesaler = await db
+  const deleteWholesalers = await db
     .get()
     .collection(collection.WHOLESALER_COLLECTION)
-    .findOne({ _id: objectId(Id) });
-  if (wholesaler.wallet == 0) {
-    return new Promise(async (resolve, reject) => {
-      await db
-        .get()
-        .collection(collection.USER_COLLECTION)
-        .insertOne(wholesaler)
-        .then(async () => {
-          await db
-            .get()
-            .collection(collection.WHOLESALER_COLLECTION)
-            .deleteOne({
-              _id: objectId(Id),
-            })
-            .then((resp) => {
-              res.status(200).json("Success");
-            })
-            .catch((err) => {
-              res.status(500).json("Somthing Went Wrong");
-            });
-        });
+    .deleteOne({
+      _id: objectId(Id),
     });
+  if (deleteWholesalers) {
+    res.status(200).json("Success");
   } else {
-    res.status(402).json("Verify Wallet");
+    res.status(500).json("Somthing Went Wrong");
   }
 });
 
@@ -417,7 +405,7 @@ const getAllOrders = asyncHandler(async (req, res) => {
   const order = await db
     .get()
     .collection(collection.ORDER_COLLECTION)
-    .find()
+    .find({ status: "Pending" })
     .sort({ _id: -1 })
     .toArray();
   if (order) {
@@ -520,7 +508,6 @@ const viewAllDealofTheDay = asyncHandler(async (req, res) => {
 });
 const DeleteDealOfTheDay = asyncHandler(async (req, res) => {
   const DealId = req.params.id;
-
   const DealProduts = await db
     .get()
     .collection(collection.DEAL_OF_THE_DAY)
@@ -678,6 +665,42 @@ const DeleteStock = asyncHandler(async (req, res) => {
     res.status(500).json("Somthing Went Wrong");
   }
 });
+//dispatch order function
+const DispatchOrder = asyncHandler(async (req, res) => {
+  //dispatch ID
+  const DispatchId = req.body.DisPatchId;
+  //phone number
+  const phone = req.body.phone;
+  //order ID
+  const ORDER_ID = req.body.OrderID;
+
+  //change order status function
+  const ChangeOrderStatus = await db
+    .get()
+    .collection(collection.ORDER_COLLECTION)
+    .updateOne({ Id: parseInt(ORDER_ID) }, { $set: { status: "Dispatched" } });
+  if (ChangeOrderStatus) {
+    res.status(200).json("Success");
+  } else {
+    res.status(500).json("Somthing Went Wrong");
+  }
+});
+//view all dispatch orders
+const viewALLDispatchOrders = asyncHandler(async (req, res) => {
+  //find dispatch orders
+  const findDispatchOrders = await db
+    .get()
+    .collection(collection.ORDER_COLLECTION)
+    .find({ status: "Dispatched" })
+    .sort({ Id: -1 })
+    .toArray();
+  if (findDispatchOrders) {
+    res.status(200).json(findDispatchOrders);
+  } else {
+    res.status(204).json("No Records");
+  }
+});
+
 module.exports = {
   verifyAdmin,
   viewAllUser,
@@ -710,4 +733,8 @@ module.exports = {
   getAllOutStock,
   UpdateStock,
   DeleteStock,
+  DispatchOrder,
+  viewALLDispatchOrders,
+
 };
+    

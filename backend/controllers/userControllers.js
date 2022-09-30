@@ -319,7 +319,7 @@ const PaytmIntegration = asyncHandler(async (req, res) => {
   //oder producting deatails storing array
   const OderProducts = [];
   //oder product deatails
-  OrderProductDeatails.map((Product) => {
+  OrderProductDeatails.map(async (Product) => {
     const obj = {
       ProductID: Product.id,
       quantity: Product.quantity,
@@ -327,6 +327,13 @@ const PaytmIntegration = asyncHandler(async (req, res) => {
       size: Product.selectedProductSize,
     };
     OderProducts.push(obj);
+  });
+  //increasing sales count
+  OderProducts.map(async (items) => {
+    await db
+      .get()
+      .collection(collection.PRODUCT_COLLECTION)
+      .updateOne({ id: items.ProductID }, { $inc: { saleCount: 1 } });
   });
   const date = new Date().toLocaleDateString();
   //create order object
@@ -377,12 +384,12 @@ const PaytmIntegration = asyncHandler(async (req, res) => {
             if (sizesObj.stock != 0) {
               var paytmParams = {};
               paytmParams["MID"] = process.env.MID;
-              paytmParams["ORDER_ID"] = OrderId;
+              paytmParams["ORDER_ID"] = "fafafs4353";
               paytmParams["TXN_AMOUNT"] = `${Amount}`;
               paytmParams["WEBSITE"] = process.env.WEBSITE;
               paytmParams["INDUSTRY_TYPE_ID"] = process.env.INDUSTRY_TYPE_ID;
               paytmParams["CHANNEL_ID"] = process.env.CHANNEL_ID;
-              paytmParams["CUST_ID"] = ID;
+              paytmParams["CUST_ID"] = "4r4353";
               paytmParams["MOBILE_NO"] = PhoneNumber;
               paytmParams["EMAIL"] = Email;
               paytmParams["CALLBACK_URL"] = process.env.CALLBACK_URL;
@@ -486,7 +493,6 @@ const Callbackfunction = asyncHandler((req, res) => {
           post_res.on("end", async function () {
             const result = JSON.parse(response);
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
-              console.log(req.session.orderProducts);
               const ID = req.session.orderProducts.CUST_ID;
               const User = req.session.orderProducts.user;
               let Applywallet = req.session?.Applywallet;
@@ -587,370 +593,370 @@ const Callbackfunction = asyncHandler((req, res) => {
   });
 });
 //add to cart
-const addToCart = asyncHandler((req, res) => {
-  const proId = req.body.prductId;
-  const userId = req.body.userId;
-  const proObj = {
-    item: objectId(proId),
-    quantity: 1,
-  };
-  return new promise(async (resolve, reject) => {
-    let userCart = await db
-      .get()
-      .collection(collection.CART_COLLECTION)
-      .findOne({ user: objectId(userId) });
-    if (userCart) {
-      let proExist = userCart.products.findIndex(
-        (product) => product.item == proId
-      );
-      if (proExist != -1) {
-        db.get()
-          .collection(collection.CART_COLLECTION)
-          .updateOne(
-            { user: objectId(userId), "products.item": objectId(proId) },
-            {
-              $inc: { "products.$.quantity": 1 },
-            }
-          )
-          .then((data) => {
-            res.status(200).json({ status: "quantity updated" });
-          })
-          .catch((erorr) => {
-            res.status(500).json({ err: "Somthing went wrong..." });
-          });
-      } else {
-        db.get()
-          .collection(collection.CART_COLLECTION)
-          .updateOne(
-            { user: objectId(userId) },
-            {
-              $push: { products: proObj },
-            }
-          )
-          .then((response) => {
-            res.status(200).json({ status: "Product Added" });
-          })
-          .catch((error) => {
-            res.status(500).json({ err: "Something went wrong...." });
-          });
-      }
-    } else {
-      let cartObj = {
-        user: objectId(userId),
-        products: [proObj],
-      };
-      db.get()
-        .collection(collection.CART_COLLECTION)
-        .insertOne(cartObj)
-        .then((response) => {
-          res.status(200).json({ status: "Cart updated" });
-        })
-        .catch((error) => {
-          res.status(500).json({ err: "Something went wrong...." });
-        });
-    }
-  });
-});
+// const addToCart = asyncHandler((req, res) => {
+//   const proId = req.body.prductId;
+//   const userId = req.body.userId;
+//   const proObj = {
+//     item: objectId(proId),
+//     quantity: 1,
+//   };
+//   return new promise(async (resolve, reject) => {
+//     let userCart = await db
+//       .get()
+//       .collection(collection.CART_COLLECTION)
+//       .findOne({ user: objectId(userId) });
+//     if (userCart) {
+//       let proExist = userCart.products.findIndex(
+//         (product) => product.item == proId
+//       );
+//       if (proExist != -1) {
+//         db.get()
+//           .collection(collection.CART_COLLECTION)
+//           .updateOne(
+//             { user: objectId(userId), "products.item": objectId(proId) },
+//             {
+//               $inc: { "products.$.quantity": 1 },
+//             }
+//           )
+//           .then((data) => {
+//             res.status(200).json({ status: "quantity updated" });
+//           })
+//           .catch((erorr) => {
+//             res.status(500).json({ err: "Somthing went wrong..." });
+//           });
+//       } else {
+//         db.get()
+//           .collection(collection.CART_COLLECTION)
+//           .updateOne(
+//             { user: objectId(userId) },
+//             {
+//               $push: { products: proObj },
+//             }
+//           )
+//           .then((response) => {
+//             res.status(200).json({ status: "Product Added" });
+//           })
+//           .catch((error) => {
+//             res.status(500).json({ err: "Something went wrong...." });
+//           });
+//       }
+//     } else {
+//       let cartObj = {
+//         user: objectId(userId),
+//         products: [proObj],
+//       };
+//       db.get()
+//         .collection(collection.CART_COLLECTION)
+//         .insertOne(cartObj)
+//         .then((response) => {
+//           res.status(200).json({ status: "Cart updated" });
+//         })
+//         .catch((error) => {
+//           res.status(500).json({ err: "Something went wrong...." });
+//         });
+//     }
+//   });
+// });
 
 //get user cart product
-const getCartProduct = asyncHandler(async (req, res) => {
-  const userId = req.params.id;
-  return new promise(async (resolve, reject) => {
-    let cartItems = await db
-      .get()
-      .collection(collection.CART_COLLECTION)
-      .aggregate([
-        {
-          $match: { user: objectId(userId) },
-        },
-        {
-          $unwind: "$products",
-        },
-        {
-          $project: {
-            item: "$products.item",
-            quantity: "$products.quantity",
-          },
-        },
-        {
-          $lookup: {
-            from: collection.PRODUCT_COLLECTION,
-            localField: "item",
-            foreignField: "_id",
-            as: "product",
-          },
-        },
-        {
-          $project: {
-            item: 1,
-            quantity: 1,
-            product: { $arrayElemAt: ["$product", 0] },
-          },
-        },
-      ])
-      .toArray();
-    console.log("itemsCart");
-    console.log(cartItems);
-    if (cartItems) {
-      res.status(200).json(cartItems);
-    } else {
-      res.status(401).json({ status: "Cart Empty" });
-    }
-  });
-});
+// const getCartProduct = asyncHandler(async (req, res) => {
+//   const userId = req.params.id;
+//   return new promise(async (resolve, reject) => {
+//     let cartItems = await db
+//       .get()
+//       .collection(collection.CART_COLLECTION)
+//       .aggregate([
+//         {
+//           $match: { user: objectId(userId) },
+//         },
+//         {
+//           $unwind: "$products",
+//         },
+//         {
+//           $project: {
+//             item: "$products.item",
+//             quantity: "$products.quantity",
+//           },
+//         },
+//         {
+//           $lookup: {
+//             from: collection.PRODUCT_COLLECTION,
+//             localField: "item",
+//             foreignField: "_id",
+//             as: "product",
+//           },
+//         },
+//         {
+//           $project: {
+//             item: 1,
+//             quantity: 1,
+//             product: { $arrayElemAt: ["$product", 0] },
+//           },
+//         },
+//       ])
+//       .toArray();
+//     console.log("itemsCart");
+//     console.log(cartItems);
+//     if (cartItems) {
+//       res.status(200).json(cartItems);
+//     } else {
+//       res.status(401).json({ status: "Cart Empty" });
+//     }
+//   });
+// });
 
 //reomove product from cart function
-const removeProductCart = asyncHandler(async (req, res) => {
-  const CartID = req.body.cart;
-  const ProductID = req.body.Product;
-  return new promise((resolve, reject) => {
-    console.log("detaid");
-    console.log(details);
-    db.get()
-      .collection(collection.CART_COLLECTION)
-      .updateOne(
-        { _id: objectId(CartID) },
-        {
-          $pull: { products: { item: objectId(ProductID) } },
-        }
-      )
-      .then((response) => {
-        if (response) {
-          res.status(200).json({ deleted: true });
-        } else {
-          res.status(500).json({ err: "Somthing went wrong...." });
-        }
-      });
-  });
-});
+// const removeProductCart = asyncHandler(async (req, res) => {
+//   const CartID = req.body.cart;
+//   const ProductID = req.body.Product;
+//   return new promise((resolve, reject) => {
+//     console.log("detaid");
+//     console.log(details);
+//     db.get()
+//       .collection(collection.CART_COLLECTION)
+//       .updateOne(
+//         { _id: objectId(CartID) },
+//         {
+//           $pull: { products: { item: objectId(ProductID) } },
+//         }
+//       )
+//       .then((response) => {
+//         if (response) {
+//           res.status(200).json({ deleted: true });
+//         } else {
+//           res.status(500).json({ err: "Somthing went wrong...." });
+//         }
+//       });
+//   });
+// });
 
 //change products quantity
-const changeProductQuantity = asyncHandler((req, res) => {
-  const count = req.body.count;
-  const updateCount = req.body.updateCount;
-  const CartId = req.body.CartID;
-  const productId = req.body.prodId;
-  details.count = parseInt(details.count);
-  details.quantity = parseInt(details.quantity);
-  return new promise((resolve, reject) => {
-    if (updateCount == -1 && count == 1) {
-      db.get()
-        .collection(collection.CART_COLLECTION)
-        .updateOne(
-          { _id: objectId(CartId) },
-          {
-            $pull: { products: { item: objectId(productId) } },
-          }
-        )
-        .then((response) => {
-          res.status(200).json({ status: "Removed Product from Cart" });
-        });
-    } else {
-      db.get()
-        .collection(collection.CART_COLLECTION)
-        .updateOne(
-          {
-            _id: objectId(CartId),
-            "products.item": objectId(productId),
-          },
-          {
-            $inc: { "products.$.quantity": updateCount },
-          }
-        )
-        .then((data) => {
-          res.status(200).json({ status: "successfuly updataed cart count: " });
-        });
-    }
-  });
-});
+// const changeProductQuantity = asyncHandler((req, res) => {
+//   const count = req.body.count;
+//   const updateCount = req.body.updateCount;
+//   const CartId = req.body.CartID;
+//   const productId = req.body.prodId;
+//   details.count = parseInt(details.count);
+//   details.quantity = parseInt(details.quantity);
+//   return new promise((resolve, reject) => {
+//     if (updateCount == -1 && count == 1) {
+//       db.get()
+//         .collection(collection.CART_COLLECTION)
+//         .updateOne(
+//           { _id: objectId(CartId) },
+//           {
+//             $pull: { products: { item: objectId(productId) } },
+//           }
+//         )
+//         .then((response) => {
+//           res.status(200).json({ status: "Removed Product from Cart" });
+//         });
+//     } else {
+//       db.get()
+//         .collection(collection.CART_COLLECTION)
+//         .updateOne(
+//           {
+//             _id: objectId(CartId),
+//             "products.item": objectId(productId),
+//           },
+//           {
+//             $inc: { "products.$.quantity": updateCount },
+//           }
+//         )
+//         .then((data) => {
+//           res.status(200).json({ status: "successfuly updataed cart count: " });
+//         });
+//     }
+//   });
+// });
 
 //get Cart function
-const getCartCount = asyncHandler((req, res) => {
-  let count = 0;
-  return new promise(async (resolve, reject) => {
-    let cart = await db
-      .get()
-      .collection(collection.CART_COLLECTION)
-      .findOne({ user: objectId(userId) });
-    if (cart) {
-      count = cart.products.length;
-      res.status(200).json({ cartCount: count });
-    } else {
-      res.status(200).json({ cartCount: count });
-    }
-  });
-});
+// const getCartCount = asyncHandler((req, res) => {
+//   let count = 0;
+//   return new promise(async (resolve, reject) => {
+//     let cart = await db
+//       .get()
+//       .collection(collection.CART_COLLECTION)
+//       .findOne({ user: objectId(userId) });
+//     if (cart) {
+//       count = cart.products.length;
+//       res.status(200).json({ cartCount: count });
+//     } else {
+//       res.status(200).json({ cartCount: count });
+//     }
+//   });
+// });
 
 //get total amount of cart
-const getTotalAmount = asyncHandler((req, res) => {
-  const userId = req.params.id;
-  return new promise(async (resolve, reject) => {
-    let total = await db
-      .get()
-      .collection(collection.CART_COLLECTION)
-      .aggregate([
-        {
-          $match: { user: objectId(userId) },
-        },
-        {
-          $unwind: "$products",
-        },
-        {
-          $project: {
-            item: "$products.item",
-            quantity: "$products.quantity",
-          },
-        },
-        {
-          $lookup: {
-            from: collection.PRODUCT_COLLECTION,
-            localField: "item",
-            foreignField: "_id",
-            as: "product",
-          },
-        },
-        {
-          $project: {
-            item: 1,
-            quantity: 1,
-            product: { $arrayElemAt: ["$product", 0] },
-          },
-        },
-        {
-          $group: {
-            _id: null,
-            total: {
-              $sum: {
-                $multiply: ["$quantity", { $toInt: "$product.offerPrice" }],
-              },
-            },
-          },
-        },
-      ])
-      .toArray();
-    console.log(total[0]?.total);
-    if (total) {
-      res.status(200).json(total);
-    } else {
-      res.status(500).json({ err: "Somthing Went Wrong" });
-    }
-  });
-});
+// const getTotalAmount = asyncHandler((req, res) => {
+//   const userId = req.params.id;
+//   return new promise(async (resolve, reject) => {
+//     let total = await db
+//       .get()
+//       .collection(collection.CART_COLLECTION)
+//       .aggregate([
+//         {
+//           $match: { user: objectId(userId) },
+//         },
+//         {
+//           $unwind: "$products",
+//         },
+//         {
+//           $project: {
+//             item: "$products.item",
+//             quantity: "$products.quantity",
+//           },
+//         },
+//         {
+//           $lookup: {
+//             from: collection.PRODUCT_COLLECTION,
+//             localField: "item",
+//             foreignField: "_id",
+//             as: "product",
+//           },
+//         },
+//         {
+//           $project: {
+//             item: 1,
+//             quantity: 1,
+//             product: { $arrayElemAt: ["$product", 0] },
+//           },
+//         },
+//         {
+//           $group: {
+//             _id: null,
+//             total: {
+//               $sum: {
+//                 $multiply: ["$quantity", { $toInt: "$product.offerPrice" }],
+//               },
+//             },
+//           },
+//         },
+//       ])
+//       .toArray();
+//     console.log(total[0]?.total);
+//     if (total) {
+//       res.status(200).json(total);
+//     } else {
+//       res.status(500).json({ err: "Somthing Went Wrong" });
+//     }
+//   });
+// });
 
 //wishilist
 
 //add to wishilist
-const addWishilist = asyncHandler((req, res) => {
-  const product = req.body.prductId;
-  const userId = req.body.userId;
-  let proObj = {
-    item: objectId(product),
-  };
-  return new promise(async (resolve, reject) => {
-    let wishilistItem = await db
-      .get()
-      .collection(collection.USER_WISHILIST_COLLECTION)
-      .findOne({ user: objectId(userId) });
-    if (wishilistItem) {
-      let proExist = wishilistItem.products.findIndex(
-        (products) => products.item == product
-      );
-      console.log(proExist);
-      if (proExist != -1) {
-        db.get()
-          .collection(collection.USER_WISHILIST_COLLECTION)
-          .updateOne(
-            { user: objectId(userId) },
-            {
-              $pull: { products: { item: objectId(product) } },
-            }
-          )
-          .then((data) => {
-            if (data) {
-              res.status(200).json({ status: "Product removed from wishlist" });
-            } else {
-              res.status(500).json({ error: "Somthing went wrong..." });
-            }
-          });
-      } else {
-        db.get()
-          .collection(collection.USER_WISHILIST_COLLECTION)
-          .updateOne(
-            { user: objectId(userId) },
-            {
-              $push: { products: proObj },
-            }
-          )
-          .then((response) => {
-            if (response) {
-              res.status(200).json({ status: "Produtct added" });
-            } else {
-              res.status(500).json({ erorr: "Something went wrong..." });
-            }
-          });
-      }
-    } else {
-      let wishlistObj = {
-        user: objectId(userId),
-        products: [proObj],
-      };
-      db.get()
-        .collection(collection.USER_WISHILIST_COLLECTION)
-        .insertOne(wishlistObj)
-        .then((response) => {
-          if (response) {
-            res.status(200).json({ status: "wishilist updated" });
-          } else {
-            res.status(500).json({ error: "Something went wrong.." });
-          }
-        });
-    }
-  });
-});
+// const addWishilist = asyncHandler((req, res) => {
+//   const product = req.body.prductId;
+//   const userId = req.body.userId;
+//   let proObj = {
+//     item: objectId(product),
+//   };
+//   return new promise(async (resolve, reject) => {
+//     let wishilistItem = await db
+//       .get()
+//       .collection(collection.USER_WISHILIST_COLLECTION)
+//       .findOne({ user: objectId(userId) });
+//     if (wishilistItem) {
+//       let proExist = wishilistItem.products.findIndex(
+//         (products) => products.item == product
+//       );
+//       console.log(proExist);
+//       if (proExist != -1) {
+//         db.get()
+//           .collection(collection.USER_WISHILIST_COLLECTION)
+//           .updateOne(
+//             { user: objectId(userId) },
+//             {
+//               $pull: { products: { item: objectId(product) } },
+//             }
+//           )
+//           .then((data) => {
+//             if (data) {
+//               res.status(200).json({ status: "Product removed from wishlist" });
+//             } else {
+//               res.status(500).json({ error: "Somthing went wrong..." });
+//             }
+//           });
+//       } else {
+//         db.get()
+//           .collection(collection.USER_WISHILIST_COLLECTION)
+//           .updateOne(
+//             { user: objectId(userId) },
+//             {
+//               $push: { products: proObj },
+//             }
+//           )
+//           .then((response) => {
+//             if (response) {
+//               res.status(200).json({ status: "Produtct added" });
+//             } else {
+//               res.status(500).json({ erorr: "Something went wrong..." });
+//             }
+//           });
+//       }
+//     } else {
+//       let wishlistObj = {
+//         user: objectId(userId),
+//         products: [proObj],
+//       };
+//       db.get()
+//         .collection(collection.USER_WISHILIST_COLLECTION)
+//         .insertOne(wishlistObj)
+//         .then((response) => {
+//           if (response) {
+//             res.status(200).json({ status: "wishilist updated" });
+//           } else {
+//             res.status(500).json({ error: "Something went wrong.." });
+//           }
+//         });
+//     }
+//   });
+// });
 
 //getwishilist products
-const getwishilist = asyncHandler((req, res) => {
-  const userId = req.params.id;
-  console.log(userId);
-  return new promise(async (resolve, reject) => {
-    let items = await db
-      .get()
-      .collection(collection.USER_WISHILIST_COLLECTION)
-      .aggregate([
-        {
-          $match: { user: objectId(userId) },
-        },
-        {
-          $unwind: "$products",
-        },
-        {
-          $project: {
-            item: "$products.item",
-          },
-        },
-        {
-          $lookup: {
-            from: collection.PRODUCT_COLLECTION,
-            localField: "item",
-            foreignField: "_id",
-            as: "product",
-          },
-        },
-        {
-          $project: {
-            item: 1,
-            product: { $arrayElemAt: ["$product", 0] },
-          },
-        },
-      ])
-      .toArray();
-    if (items) {
-      res.status(200).json(items);
-    } else {
-      res.status(500).json({ error: "Somthing went wrong" });
-    }
-  });
-});
+// const getwishilist = asyncHandler((req, res) => {
+//   const userId = req.params.id;
+//   console.log(userId);
+//   return new promise(async (resolve, reject) => {
+//     let items = await db
+//       .get()
+//       .collection(collection.USER_WISHILIST_COLLECTION)
+//       .aggregate([
+//         {
+//           $match: { user: objectId(userId) },
+//         },
+//         {
+//           $unwind: "$products",
+//         },
+//         {
+//           $project: {
+//             item: "$products.item",
+//           },
+//         },
+//         {
+//           $lookup: {
+//             from: collection.PRODUCT_COLLECTION,
+//             localField: "item",
+//             foreignField: "_id",
+//             as: "product",
+//           },
+//         },
+//         {
+//           $project: {
+//             item: 1,
+//             product: { $arrayElemAt: ["$product", 0] },
+//           },
+//         },
+//       ])
+//       .toArray();
+//     if (items) {
+//       res.status(200).json(items);
+//     } else {
+//       res.status(500).json({ error: "Somthing went wrong" });
+//     }
+//   });
+// });
 
 //remove products from wishilist
 //pending works
@@ -1228,20 +1234,32 @@ const getMyOrders = asyncHandler(async (req, res) => {
     res.status(204).json("No records");
   }
 });
+//get my orders produts
+const getMyorderProduts = asyncHandler(async (req, res) => {
+  const myOrdersProducts = await db
+    .get()
+    .collection(collection.PRODUCT_COLLECTION)
+    .find()
+    .toArray();
+  if (myOrdersProducts) {
+    res.status(200).json(myOrdersProducts);
+  } else {
+    res.status(500).json("Somthing Went Wrong");
+  }
+});
 module.exports = {
   registerUser,
   Phoneverification,
   loginUser,
   VerifyPhone,
   cheackOtp,
-  addToCart,
-  getCartProduct,
-  removeProductCart,
-  changeProductQuantity,
-  getCartCount,
-  getTotalAmount,
-  addWishilist,
-  getwishilist,
+  // getCartProduct,
+  // removeProductCart,
+  // changeProductQuantity,
+  // getCartCount,
+  // getTotalAmount,
+  // addWishilist,
+  // getwishilist,
   PaytmIntegration,
   Callbackfunction,
   getTodayDeals,
@@ -1253,4 +1271,5 @@ module.exports = {
   ResetOtpSend,
   DeleteuserAddress,
   getMyOrders,
+  getMyorderProduts,
 };

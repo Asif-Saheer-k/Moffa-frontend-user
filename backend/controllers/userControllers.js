@@ -1286,7 +1286,7 @@ const AddWalletAmount = asyncHandler((req, res) => {
   paytmParams["MOBILE_NO"] = phone;
   paytmParams["EMAIL"] = email;
   paytmParams["CALLBACK_URL"] =
-    "http://localhost:3000/api/user/add-wallet-ammount";
+    "http://localhost:8000/api/user/add-wallet-ammount";
   var paytmChecksum = PaytmChecksum.generateSignature(
     paytmParams,
     `${process.env.KEY}#`

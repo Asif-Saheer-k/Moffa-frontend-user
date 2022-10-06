@@ -54,8 +54,6 @@ router.route("/today-deal-of-the-day").get(getTodayDeals);
 router.route("/remove-deal-of-the-day").delete(removeYesterDayDeal);
 //callback function for payment
 router.route("/callback").post(Callbackfunction);
-//add wallet amount
-router.route("/add-wallet-ammount").post(verifyWalletAmount);
 //remove previous deal of the day offers
 router.route("/cheack-today-date-remove-deal").delete(removePreviousDeals);
 //user profile edit routed
@@ -72,5 +70,8 @@ router.route("/get-my-orders/:id").get(getMyOrders);
 router.route("/view-my-orders-products").get(getMyorderProduts);
 //add amount to wallet
 router.route("/add-amount-wallet").post(AddWalletAmount);
+//add wallet amount
+router.route("/transaction").post(verifyWalletAmount);
+
 
 module.exports = router;

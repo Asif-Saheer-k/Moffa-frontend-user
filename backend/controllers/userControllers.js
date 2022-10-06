@@ -403,7 +403,7 @@ const PaytmIntegration = asyncHandler(async (req, res) => {
 
               //chack order products
               const order = req.session.orderProducts;
-              if (!order) {
+              if (!order) {    
                 
                 res.status(500).json("refresh");
               } else {
@@ -1285,11 +1285,10 @@ const AddWalletAmount = asyncHandler((req, res) => {
   paytmParams["CUST_ID"] = ID;
   paytmParams["MOBILE_NO"] = phone;
   paytmParams["EMAIL"] = email;
-  paytmParams["CALLBACK_URL"] =
-    "/api/user/add-wallet-ammount";
+  paytmParams["CALLBACK_URL"] =process.env.WALLET_CALLBACK_URL;
   var paytmChecksum = PaytmChecksum.generateSignature(
     paytmParams,
-    `${process.env.KEY}#`
+    `${process.env.KEY}#` 
   );
 
   paytmChecksum
@@ -1304,6 +1303,7 @@ const AddWalletAmount = asyncHandler((req, res) => {
       res.status(500).json("Somthing Went Wrong");
     });
 });
+
 //add wallet amount
 const verifyWalletAmount = asyncHandler((req, res) => {
   const from = new fromidable.IncomingForm();
@@ -1370,7 +1370,6 @@ const verifyWalletAmount = asyncHandler((req, res) => {
         };
         var amount = req.session.wholeSalerIDAmount;
         var ID = req.session.wholeSalerID;
-
         // Set up the request
         var response = "";
         var post_req = https.request(options, function (post_res) {

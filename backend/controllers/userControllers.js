@@ -408,7 +408,7 @@ const cheackOtp = asyncHandler(async (req, res) => {
 });
 
 //payment integration function
-const PaytmIntegration = asyncHandler(async(req, res) => {
+const PaytmIntegration = asyncHandler(async (req, res) => {
   let Amount = req.body.totamAmount;
   const ID = req.body.CUST_ID;
   const Name = req.body.Name;
@@ -603,6 +603,7 @@ const PaytmIntegration = asyncHandler(async(req, res) => {
 const Callbackfunction = asyncHandler((req, res) => {
   const from = new fromidable.IncomingForm();
   from.parse(req, (err, field, file) => {
+    console.log(field,"FSFSFSFCC");
     var paytmChecksum = "";
     const received_data = field;
     var paytmParams = {};
@@ -673,6 +674,7 @@ const Callbackfunction = asyncHandler((req, res) => {
 
           post_res.on("end", async function () {
             const result = JSON.parse(response);
+            console.log(result.body.resultInfo.resultStatus, "DCCCCCCCC");
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
               const ID = req.session.orderProducts.CUST_ID;
               const User = req.session.orderProducts.user;
@@ -1517,7 +1519,7 @@ const verifyWalletAmount = asyncHandler((req, res) => {
           // hostname: "securegw-stage.paytm.in",
 
           /* for Production */
-          hostname: 'securegw.paytm.in',
+          hostname: "securegw.paytm.in",
 
           port: 443,
           path: "/v3/order/status",

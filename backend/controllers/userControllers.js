@@ -408,7 +408,7 @@ const cheackOtp = asyncHandler(async (req, res) => {
 });
 
 //payment integration function
-const PaytmIntegration = asyncHandler(async (req, res) => {
+const PaytmIntegration = asyncHandler(async(req, res) => {
   let Amount = req.body.totamAmount;
   const ID = req.body.CUST_ID;
   const Name = req.body.Name;
@@ -603,7 +603,6 @@ const PaytmIntegration = asyncHandler(async (req, res) => {
 const Callbackfunction = asyncHandler((req, res) => {
   const from = new fromidable.IncomingForm();
   from.parse(req, (err, field, file) => {
-    console.log(field,"FSFSFSFCC");
     var paytmChecksum = "";
     const received_data = field;
     var paytmParams = {};
@@ -674,7 +673,7 @@ const Callbackfunction = asyncHandler((req, res) => {
 
           post_res.on("end", async function () {
             const result = JSON.parse(response);
-            console.log(result.body.resultInfo.resultStatus, "DCCCCCCCC");
+            console.log(result.body.resultInfo.resultStatus,"LLLLLLLLLLLLLLLLLLL");
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
               const ID = req.session.orderProducts.CUST_ID;
               const User = req.session.orderProducts.user;
@@ -752,12 +751,12 @@ const Callbackfunction = asyncHandler((req, res) => {
               if (success) {
                 req.session.orderProducts = null;
                 req.session.Applywallet = null;
-                res.redirect("/success");
+                res.redirect("https://www.thepaaki.com/success");
               } else {
-                res.redirect("/error");
+                res.redirect("https://www.thepaaki.com/error");
               }
             } else {
-              res.redirect("/error");
+              res.redirect("https://www.thepaaki.com/error");
             }
           });
         });
@@ -765,7 +764,7 @@ const Callbackfunction = asyncHandler((req, res) => {
         post_req.end();
       });
     } else {
-      return res.redirect("/error");
+      return res.redirect("https://www.thepaaki.com/error");
     }
   });
 });
@@ -1519,7 +1518,7 @@ const verifyWalletAmount = asyncHandler((req, res) => {
           // hostname: "securegw-stage.paytm.in",
 
           /* for Production */
-          hostname: "securegw.paytm.in",
+          hostname: 'securegw.paytm.in',
 
           port: 443,
           path: "/v3/order/status",
@@ -1541,13 +1540,14 @@ const verifyWalletAmount = asyncHandler((req, res) => {
           });
           post_res.on("end", async function () {
             const result = JSON.parse(response);
+            console.log(result.body.resultInfo.resultStatus,"LLLLLLLLLLLLLLLLLLL");
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
               console.log(ID, amount, "session error");
               const updateAmount = await db
                 .get()
                 .collection(collection.WHOLESALER_COLLECTION)
                 .updateOne(
-                  { CUST_ID: ID },
+                  { CUST_ID: ID }, 
                   { $inc: { wallet: parseInt(amount) } }
                 );
               return res.redirect("/my-account");

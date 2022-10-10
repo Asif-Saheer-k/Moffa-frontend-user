@@ -9,7 +9,13 @@ const PaytmChecksum = require("../utils/PaytmCecksum");
 const fromidable = require("formidable");
 const { v4: uuidv4 } = require("uuid");
 const https = require("https");
+const { Promise } = require("mongodb");
+const Razorpay = require("razorpay");
 
+// const razorpay = new Razorpay({
+//   key_id: "rzp_test_IYqnwXk3p7eSL2",
+//   key_secret: "YGQg37fRzHRIJJKMycxb2Blh",
+// });
 //login deatails
 //user register controller with otp verification
 const registerUser = asyncHandler(async (req, res) => {
@@ -68,7 +74,6 @@ const Phoneverification = asyncHandler(async (req, res) => {
   } else {
     ID = 10000000;
   }
-  console.log(ID);
 
   const Otp = req.params.otp;
   const userData = req.session.userDeatails;
@@ -108,8 +113,46 @@ const loginUser = asyncHandler(async (req, res) => {
     .findOne({ email: Email });
   if (userDeatails) {
     //compate entered password and database password
-    bcrypt.compare(Password, userDeatails.password).then((status) => {
+    bcrypt.compare(Password, userDeatails.password).then(async (status) => {
       if (status) {
+        const userId = userDeatails.CUST_ID;
+        let cartItems = await db
+          .get()
+          .collection(collection.CART_COLLECTION)
+          .aggregate([
+            {
+              $match: { userId: parseInt(userId) },
+            },
+            {
+              $unwind: "$products",
+            },
+            {
+              $project: {
+                item: "$products.item",
+                quantity: "$products.quantity",
+                selectedcolor: "$products.color",
+                selectedsize: "$products.size",
+              },
+            },
+            {
+              $lookup: {
+                from: collection.PRODUCT_COLLECTION,
+                localField: "item",
+                foreignField: "id",
+                as: "product",
+              },
+            },
+            {
+              $project: {
+                item: 1,
+                quantity: 1,
+                selectedcolor: 1,
+                selectedsize: 1,
+                product: { $arrayElemAt: ["$product", 0] },
+              },
+            },
+          ])
+          .toArray();
         const name = userDeatails.name;
         const user = true;
         const email = userDeatails.email;
@@ -123,6 +166,7 @@ const loginUser = asyncHandler(async (req, res) => {
           phone,
           token,
           CUST_ID,
+          cartItems,
         });
       } else {
         res.status(500).json("Invalid Password");
@@ -135,8 +179,47 @@ const loginUser = asyncHandler(async (req, res) => {
       .findOne({ email: Email });
 
     if (Wholesaler) {
-      bcrypt.compare(Password, Wholesaler.password).then((status) => {
+      bcrypt.compare(Password, Wholesaler.password).then(async (status) => {
         if (status) {
+          const userId = Wholesaler.CUST_ID;
+          let cartItems = await db
+            .get()
+            .collection(collection.CART_COLLECTION)
+            .aggregate([
+              {
+                $match: { userId: parseInt(userId) },
+              },
+              {
+                $unwind: "$products",
+              },
+              {
+                $project: {
+                  item: "$products.item",
+                  quantity: "$products.quantity",
+                  selectedcolor: "$products.color",
+                  selectedsize: "$products.size",
+                },
+              },
+              {
+                $lookup: {
+                  from: collection.PRODUCT_COLLECTION,
+                  localField: "item",
+                  foreignField: "id",
+                  as: "product",
+                },
+              },
+              {
+                $project: {
+                  item: 1,
+                  quantity: 1,
+                  selectedcolor: 1,
+                  selectedsize: 1,
+                  product: { $arrayElemAt: ["$product", 0] },
+                },
+              },
+            ])
+            .toArray();
+
           const name = Wholesaler.name;
           const user = false;
           const email = Wholesaler.email;
@@ -150,6 +233,7 @@ const loginUser = asyncHandler(async (req, res) => {
             phone,
             token,
             CUST_ID,
+            cartItems,
           });
         } else {
           res.status(401).json("Invalid Password");
@@ -204,6 +288,45 @@ const cheackOtp = asyncHandler(async (req, res) => {
     const user = true;
     const code = await verification.CheckOtp(users.phone, Otp);
     if (code.valid) {
+      const userId = users.CUST_ID;
+      let cartItems = await db
+        .get()
+        .collection(collection.CART_COLLECTION)
+        .aggregate([
+          {
+            $match: { userId: parseInt(userId) },
+          },
+          {
+            $unwind: "$products",
+          },
+          {
+            $project: {
+              item: "$products.item",
+              quantity: "$products.quantity",
+              selectedcolor: "$products.color",
+              selectedsize: "$products.size",
+            },
+          },
+          {
+            $lookup: {
+              from: collection.PRODUCT_COLLECTION,
+              localField: "item",
+              foreignField: "id",
+              as: "product",
+            },
+          },
+          {
+            $project: {
+              item: 1,
+              quantity: 1,
+              selectedcolor: 1,
+              selectedsize: 1,
+              product: { $arrayElemAt: ["$product", 0] },
+            },
+          },
+        ])
+        .toArray();
+
       const name = users.name;
       const email = users.email;
       const phone = users.phone;
@@ -216,6 +339,7 @@ const cheackOtp = asyncHandler(async (req, res) => {
         token,
         user,
         CUST_ID,
+        cartItems,
       });
     } else {
       res.status(401).json("Invalid Otp Please verify Otp");
@@ -223,6 +347,45 @@ const cheackOtp = asyncHandler(async (req, res) => {
   } else {
     const code = await verification.CheckOtp(users.phone, Otp);
     if (code.valid) {
+      const userId = users.CUST_ID;
+      let cartItems = await db
+        .get()
+        .collection(collection.CART_COLLECTION)
+        .aggregate([
+          {
+            $match: { userId: parseInt(userId) },
+          },
+          {
+            $unwind: "$products",
+          },
+          {
+            $project: {
+              item: "$products.item",
+              quantity: "$products.quantity",
+              selectedcolor: "$products.color",
+              selectedsize: "$products.size",
+            },
+          },
+          {
+            $lookup: {
+              from: collection.PRODUCT_COLLECTION,
+              localField: "item",
+              foreignField: "id",
+              as: "product",
+            },
+          },
+          {
+            $project: {
+              item: 1,
+              quantity: 1,
+              selectedcolor: 1,
+              selectedsize: 1,
+              product: { $arrayElemAt: ["$product", 0] },
+            },
+          },
+        ])
+        .toArray();
+
       const user = false;
       const name = users.name;
       const email = users.email;
@@ -236,6 +399,7 @@ const cheackOtp = asyncHandler(async (req, res) => {
         token,
         user,
         CUST_ID,
+        cartItems,
       });
     } else {
       res.status(401).json("Invalid Otp Please verify Otp");
@@ -244,7 +408,7 @@ const cheackOtp = asyncHandler(async (req, res) => {
 });
 
 //payment integration function
-const PaytmIntegration = asyncHandler(async (req, res) => {
+const PaytmIntegration = asyncHandler(async(req, res) => {
   let Amount = req.body.totamAmount;
   const ID = req.body.CUST_ID;
   const Name = req.body.Name;
@@ -390,12 +554,12 @@ const PaytmIntegration = asyncHandler(async (req, res) => {
           if (sizesObj.name == products.size) {
             if (sizesObj.stock != 0) {
               var paytmParams = {};
-              paytmParams["MID"] = process.env.MID;
+              paytmParams["MID"] = "gpXQdM54976624519176";
               paytmParams["ORDER_ID"] = uuid;
               paytmParams["TXN_AMOUNT"] = `${Amount}`;
               paytmParams["WEBSITE"] = process.env.WEBSITE;
               paytmParams["INDUSTRY_TYPE_ID"] = process.env.INDUSTRY_TYPE_ID;
-              paytmParams["CHANNEL_ID"] = process.env.CHANNEL_ID;
+              paytmParams["CHANNEL_ID"] = "WEB";
               paytmParams["CUST_ID"] = ID;
               paytmParams["MOBILE_NO"] = PhoneNumber;
               paytmParams["EMAIL"] = Email;
@@ -403,20 +567,23 @@ const PaytmIntegration = asyncHandler(async (req, res) => {
 
               //chack order products
               const order = req.session.orderProducts;
-              if (!order) {    
-                
+
+              console.log(order, "Session error");
+              if (!order) {
                 res.status(500).json("refresh");
               } else {
                 var paytmChecksum = PaytmChecksum.generateSignature(
                   paytmParams,
-                  `${process.env.KEY}#`
+                  `U58gVtPsODy6FdEo`
                 );
                 paytmChecksum
                   .then(function (result) {
                     let Params = {
                       ...paytmParams,
                       CHECKSUMHASH: result,
+                      orderProducts: order,
                     };
+                    console.log(Params, "DDC");
                     res.status(200).json(Params);
                   })
                   .catch(function (error) {
@@ -438,7 +605,6 @@ const Callbackfunction = asyncHandler((req, res) => {
   from.parse(req, (err, field, file) => {
     var paytmChecksum = "";
     const received_data = field;
-
     var paytmParams = {};
     for (var key in received_data) {
       if (key == "CHECKSUMHASH") {
@@ -449,7 +615,7 @@ const Callbackfunction = asyncHandler((req, res) => {
     }
     var isVerifySignature = PaytmChecksum.verifySignature(
       paytmParams,
-      `${process.env.KEY}#`,
+      `U58gVtPsODy6FdEo`,
       paytmChecksum
     );
     if (isVerifySignature) {
@@ -471,7 +637,7 @@ const Callbackfunction = asyncHandler((req, res) => {
        */
       PaytmChecksum.generateSignature(
         JSON.stringify(paytmParams.body),
-        `${process.env.KEY}#`
+        `U58gVtPsODy6FdEo`
       ).then(function (checksum) {
         /* head parameters */
         paytmParams.head = {
@@ -484,10 +650,10 @@ const Callbackfunction = asyncHandler((req, res) => {
 
         var options = {
           /* for Staging */
-          hostname: "securegw-stage.paytm.in",
+          // hostname: "securegw-stage.paytm.in",
 
           /* for Production */
-          // hostname: 'securegw.paytm.in',
+          hostname: "securegw.paytm.in",
 
           port: 443,
           path: "/v3/order/status",
@@ -508,7 +674,6 @@ const Callbackfunction = asyncHandler((req, res) => {
           post_res.on("end", async function () {
             const result = JSON.parse(response);
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
-              console.log(req.session.orderProducts,"ASXXXX");
               const ID = req.session.orderProducts.CUST_ID;
               const User = req.session.orderProducts.user;
               let Applywallet = req.session?.Applywallet;
@@ -533,7 +698,7 @@ const Callbackfunction = asyncHandler((req, res) => {
                   .get()
                   .collection(collection.PRODUCT_COLLECTION)
                   .findOne({ id: products.ProductID });
-                product.variation.map(async (obj, indexes) => { 
+                product.variation.map(async (obj, indexes) => {
                   if (obj.color == products.color) {
                     obj.size.map(async (sizesObj, index) => {
                       if (sizesObj.name == products.size) {
@@ -572,16 +737,12 @@ const Callbackfunction = asyncHandler((req, res) => {
                                 },
                               }
                             );
-                        } else {
-                          res.redirect("/checkout");
                         }
                       }
                     });
                   }
                 });
               });
-              console.log(result.body.resultInfo.resultStatus);
-
               const success = await db
                 .get()
                 .collection(collection.ORDER_COLLECTION)
@@ -589,20 +750,15 @@ const Callbackfunction = asyncHandler((req, res) => {
               if (success) {
                 req.session.orderProducts = null;
                 req.session.Applywallet = null;
-                return res.redirect("/success");
+                res.redirect("/success");
               } else {
-                return res.redirect("/error");
+                res.redirect("/error");
               }
-            } else if (result.body.resultInfo.resultStatus == "PENDING") {
-              res.redirect("/error");
             } else {
-              res.send(result.body.resultInfo.resultMsg);
-              console.log(result.body.resultInfo.resultMsg);
-              return res.redirect("/error");
+              res.redirect("/error");
             }
           });
         });
-
         post_req.write(post_data);
         post_req.end();
       });
@@ -611,143 +767,146 @@ const Callbackfunction = asyncHandler((req, res) => {
     }
   });
 });
-//add to cart
-// const addToCart = asyncHandler((req, res) => {
-//   const proId = req.body.prductId;
-//   const userId = req.body.userId;
-//   const proObj = {
-//     item: objectId(proId),
-//     quantity: 1,
-//   };
-//   return new promise(async (resolve, reject) => {
-//     let userCart = await db
-//       .get()
-//       .collection(collection.CART_COLLECTION)
-//       .findOne({ user: objectId(userId) });
-//     if (userCart) {
-//       let proExist = userCart.products.findIndex(
-//         (product) => product.item == proId
-//       );
-//       if (proExist != -1) {
-//         db.get()
-//           .collection(collection.CART_COLLECTION)
-//           .updateOne(
-//             { user: objectId(userId), "products.item": objectId(proId) },
-//             {
-//               $inc: { "products.$.quantity": 1 },
-//             }
-//           )
-//           .then((data) => {
-//             res.status(200).json({ status: "quantity updated" });
-//           })
-//           .catch((erorr) => {
-//             res.status(500).json({ err: "Somthing went wrong..." });
-//           });
-//       } else {
-//         db.get()
-//           .collection(collection.CART_COLLECTION)
-//           .updateOne(
-//             { user: objectId(userId) },
-//             {
-//               $push: { products: proObj },
-//             }
-//           )
-//           .then((response) => {
-//             res.status(200).json({ status: "Product Added" });
-//           })
-//           .catch((error) => {
-//             res.status(500).json({ err: "Something went wrong...." });
-//           });
-//       }
-//     } else {
-//       let cartObj = {
-//         user: objectId(userId),
-//         products: [proObj],
-//       };
-//       db.get()
-//         .collection(collection.CART_COLLECTION)
-//         .insertOne(cartObj)
-//         .then((response) => {
-//           res.status(200).json({ status: "Cart updated" });
-//         })
-//         .catch((error) => {
-//           res.status(500).json({ err: "Something went wrong...." });
-//         });
-//     }
-//   });
-// });
+// add to cart
+const addToCart = asyncHandler(async (req, res) => {
+  console.log(req.body);
+  const proId = req.body.ProId;
+  const userId = req.body.userId;
+  const color = req.body.color;
+  const size = req.body.size;
+  const proObj = {
+    item: proId,
+    quantity: 1,
+    color,
+    size,
+  };
+  console.log(proObj);
+  let userCart = await db
+    .get()
+    .collection(collection.CART_COLLECTION)
+    .findOne({ userId: parseInt(userId) });
+  if (userCart) {
+    let proExist = userCart.products.findIndex(
+      (product) =>
+        product.item == proId && product.color == color && product.size == size
+    );
+    if (proExist != -1) {
+      const incquantity = await db
+        .get()
+        .collection(collection.CART_COLLECTION)
+        .updateOne(
+          { userId: userId, "products.item": proId },
+          {
+            $inc: { "products.$.quantity": 1 },
+          }
+        );
+      if (incquantity) {
+        res.status(200).json("quantity updated");
+      } else {
+        res.status(500).json("Somthing went wrong...");
+      }
+    } else {
+      const update = await db
+        .get()
+        .collection(collection.CART_COLLECTION)
+        .updateOne(
+          { userId: parseInt(userId) },
+          {
+            $push: { products: proObj },
+          }
+        );
+      if (update) {
+        res.status(200).json("Product Added");
+      } else {
+        res.status(500).json("Something went wrong....");
+      }
+    }
+  } else {
+    let cartObj = {
+      userId: userId,
+      products: [proObj],
+    };
+    const insert = await db
+      .get()
+      .collection(collection.CART_COLLECTION)
+      .insertOne(cartObj);
+    if (insert) {
+      res.status(200).json("Cart updated");
+    } else {
+      res.status(500).json("Something went wrong....");
+    }
+  }
+});
 
-//get user cart product
-// const getCartProduct = asyncHandler(async (req, res) => {
-//   const userId = req.params.id;
-//   return new promise(async (resolve, reject) => {
-//     let cartItems = await db
-//       .get()
-//       .collection(collection.CART_COLLECTION)
-//       .aggregate([
-//         {
-//           $match: { user: objectId(userId) },
-//         },
-//         {
-//           $unwind: "$products",
-//         },
-//         {
-//           $project: {
-//             item: "$products.item",
-//             quantity: "$products.quantity",
-//           },
-//         },
-//         {
-//           $lookup: {
-//             from: collection.PRODUCT_COLLECTION,
-//             localField: "item",
-//             foreignField: "_id",
-//             as: "product",
-//           },
-//         },
-//         {
-//           $project: {
-//             item: 1,
-//             quantity: 1,
-//             product: { $arrayElemAt: ["$product", 0] },
-//           },
-//         },
-//       ])
-//       .toArray();
-//     console.log("itemsCart");
-//     console.log(cartItems);
-//     if (cartItems) {
-//       res.status(200).json(cartItems);
-//     } else {
-//       res.status(401).json({ status: "Cart Empty" });
-//     }
-//   });
-// });
+// get user cart product
+const getCartProduct = asyncHandler(async (req, res) => {
+  const userId = req.params.id;
+  let cartItems = await db
+    .get()
+    .collection(collection.CART_COLLECTION)
+    .aggregate([
+      {
+        $match: { userId: parseInt(userId) },
+      },
+      {
+        $unwind: "$products",
+      },
+      {
+        $project: {
+          item: "$products.item",
+          quantity: "$products.quantity",
+          selectedcolor: "$products.color",
+          selectedsize: "$products.size",
+        },
+      },
+      {
+        $lookup: {
+          from: collection.PRODUCT_COLLECTION,
+          localField: "item",
+          foreignField: "id",
+          as: "product",
+        },
+      },
+      {
+        $project: {
+          item: 1,
+          quantity: 1,
+          selectedcolor: 1,
+          selectedsize: 1,
+          product: { $arrayElemAt: ["$product", 0] },
+        },
+      },
+    ])
+    .toArray();
+  if (cartItems) {
+    res.status(200).json(cartItems);
+  } else {
+    res.status(401).json("Cart Empty");
+  }
+});
 
 //reomove product from cart function
-// const removeProductCart = asyncHandler(async (req, res) => {
-//   const CartID = req.body.cart;
-//   const ProductID = req.body.Product;
-//   return new promise((resolve, reject) => {
-//     console.log("detaid");
-//     console.log(details);
-//     db.get()
-//       .collection(collection.CART_COLLECTION)
-//       .updateOne(
-//         { _id: objectId(CartID) },
-//         {
-//           $pull: { products: { item: objectId(ProductID) } },
-//         }
-//       )
-//       .then((response) => {
-//         if (response) {
-//           res.status(200).json({ deleted: true });
-//         } else {
-//           res.status(500).json({ err: "Somthing went wrong...." });
-//         }
-//       });
-//   });
-// });
+const removeProductCart = asyncHandler(async (req, res) => {
+  const UserID = req.body.userID;
+  const ProductID = req.body.Product;
+  const deletes = await db
+    .get()
+    .collection(collection.CART_COLLECTION)
+    .updateOne(
+      {
+        userId: parseInt(UserID),
+      },
+      {
+        $pull: { products: { item: ProductID } },
+      }
+    );
+
+  if (deletes) {
+    res.status(200).json("deleted");
+  } else {
+    res.status(500).json("Somthing went wrong....");
+  }
+});
 
 //change products quantity
 // const changeProductQuantity = asyncHandler((req, res) => {
@@ -1276,7 +1435,7 @@ const AddWalletAmount = asyncHandler((req, res) => {
   req.session.wholeSalerID = ID;
   req.session.wholeSalerIDAmount = Amount;
   var paytmParams = {};
-  paytmParams["MID"] = process.env.MID;
+  paytmParams["MID"] = "gpXQdM54976624519176";
   paytmParams["ORDER_ID"] = userId;
   paytmParams["TXN_AMOUNT"] = Amount;
   paytmParams["WEBSITE"] = process.env.WEBSITE;
@@ -1285,10 +1444,10 @@ const AddWalletAmount = asyncHandler((req, res) => {
   paytmParams["CUST_ID"] = ID;
   paytmParams["MOBILE_NO"] = phone;
   paytmParams["EMAIL"] = email;
-  paytmParams["CALLBACK_URL"] =process.env.WALLET_CALLBACK_URL;
+  paytmParams["CALLBACK_URL"] = process.env.WALLET_CALLBACK_URL;
   var paytmChecksum = PaytmChecksum.generateSignature(
     paytmParams,
-    `${process.env.KEY}#` 
+    `U58gVtPsODy6FdEo`
   );
 
   paytmChecksum
@@ -1300,6 +1459,7 @@ const AddWalletAmount = asyncHandler((req, res) => {
       res.status(200).json(Params);
     })
     .catch(function (error) {
+      console.log(error);
       res.status(500).json("Somthing Went Wrong");
     });
 });
@@ -1310,7 +1470,6 @@ const verifyWalletAmount = asyncHandler((req, res) => {
   from.parse(req, (err, field, file) => {
     var paytmChecksum = "";
     const received_data = field;
-
     var paytmParams = {};
     for (var key in received_data) {
       if (key == "CHECKSUMHASH") {
@@ -1321,7 +1480,7 @@ const verifyWalletAmount = asyncHandler((req, res) => {
     }
     var isVerifySignature = PaytmChecksum.verifySignature(
       paytmParams,
-      `${process.env.KEY}#`,
+      `U58gVtPsODy6FdEo`,
       paytmChecksum
     );
     if (isVerifySignature) {
@@ -1342,7 +1501,7 @@ const verifyWalletAmount = asyncHandler((req, res) => {
        */
       PaytmChecksum.generateSignature(
         JSON.stringify(paytmParams.body),
-        `${process.env.KEY}#`
+        `U58gVtPsODy6FdEo`
       ).then(function (checksum) {
         /* head parameters */
         paytmParams.head = {
@@ -1355,10 +1514,10 @@ const verifyWalletAmount = asyncHandler((req, res) => {
 
         var options = {
           /* for Staging */
-          hostname: "securegw-stage.paytm.in",
+          // hostname: "securegw-stage.paytm.in",
 
           /* for Production */
-          // hostname: 'securegw.paytm.in',
+          hostname: 'securegw.paytm.in',
 
           port: 443,
           path: "/v3/order/status",
@@ -1368,8 +1527,10 @@ const verifyWalletAmount = asyncHandler((req, res) => {
             "Content-Length": post_data.length,
           },
         };
+
         var amount = req.session.wholeSalerIDAmount;
         var ID = req.session.wholeSalerID;
+
         // Set up the request
         var response = "";
         var post_req = https.request(options, function (post_res) {
@@ -1379,6 +1540,7 @@ const verifyWalletAmount = asyncHandler((req, res) => {
           post_res.on("end", async function () {
             const result = JSON.parse(response);
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
+              console.log(ID, amount, "session error");
               const updateAmount = await db
                 .get()
                 .collection(collection.WHOLESALER_COLLECTION)
@@ -1387,15 +1549,11 @@ const verifyWalletAmount = asyncHandler((req, res) => {
                   { $inc: { wallet: parseInt(amount) } }
                 );
               return res.redirect("/my-account");
-            } else if (result.body.resultInfo.resultStatus == "PENDING") {
-              return res.redirect("/error");
             } else {
-              res.send(result.body.resultInfo.resultMsg);
               return res.redirect("/error");
             }
           });
         });
-
         post_req.write(post_data);
         post_req.end();
       });
@@ -1404,8 +1562,33 @@ const verifyWalletAmount = asyncHandler((req, res) => {
     }
   });
 });
+const razorpayIntegration = asyncHandler(async (req, res) => {
+  const ammount = 500;
+  const currency = "INR";
+  const payment_capture = 1;
+  const options = {
+    amount: ammount.toString(),
+    currency,
+    receipt: uuidv4(),
+    payment_capture,
+  };
+  const response = await razorpay.orders.create(options);
+  console.log(response);
+  if (response) {
+    console.log(response);
+    res.status(200).json({
+      id: response.id,
+      currency: response.currency,
+      ammount: response.ammount,
+    });
+  } else {
+    console.log(response);
+  }
+});
 module.exports = {
+  addToCart,
   registerUser,
+  getCartProduct,
   Phoneverification,
   loginUser,
   VerifyPhone,
@@ -1424,4 +1607,6 @@ module.exports = {
   getMyorderProduts,
   AddWalletAmount,
   verifyWalletAmount,
+  removeProductCart,
+  razorpayIntegration,
 };

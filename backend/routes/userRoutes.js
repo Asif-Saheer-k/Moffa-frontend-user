@@ -28,12 +28,18 @@ const {
   getMyorderProduts,
   AddWalletAmount,
   verifyWalletAmount,
+  getCartProduct,
+  addToCart,
+  removeProductCart,
+  razorpayIntegration
 } = require("../controllers/userControllers");
 const { verifyToken } = require("../middleware/tokenVerification");
 //login routes using email,pssword
 router.route("/login").post(loginUser);
 // user registration routes using email,password,name,phonenumber
 router.route("/register").post(registerUser);
+//add to cart
+router.route('/add-to-cart').post(addToCart)
 //resent otp function
 router.route("/resent-otp").get(ResetOtpSend);
 //after registration otp verification routes;
@@ -72,6 +78,12 @@ router.route("/view-my-orders-products").get(getMyorderProduts);
 router.route("/add-amount-wallet").post(AddWalletAmount);
 //add wallet amount
 router.route("/transaction").post(verifyWalletAmount);
-
+//get cart produts
+router.route('/view-cart-produts/:id').get(getCartProduct)
+//remove cart produts
+router.route('/dlete-cart-produts').post(removeProductCart)
+//razorpay integration
+router.route('/razorpay').post(razorpayIntegration)
 
 module.exports = router;
+  

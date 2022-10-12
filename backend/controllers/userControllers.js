@@ -601,8 +601,10 @@ const PaytmIntegration = asyncHandler(async(req, res) => {
 });
 
 const Callbackfunction = asyncHandler((req, res) => {
+  console.log("callback");
   const from = new fromidable.IncomingForm();
   from.parse(req, (err, field, file) => {
+  console.log(field,"FSDFSFS");
     var paytmChecksum = "";
     const received_data = field;
     var paytmParams = {};

@@ -1700,16 +1700,21 @@ const createOrderObjct = asyncHandler(async (req, res) => {
   //find quantity function
   const orderItems = req.session.orderProducts;
   const uuid = uuidv4();
+  console.log(orderItems,"FSFSDF");
   OderProducts.map(async (products) => {
     const product = await db
       .get()
       .collection(collection.PRODUCT_COLLECTION)
       .findOne({ id: products.ProductID });
+    console.log(product,"FDSFSDFSDFcccc");
     product.variation.map((obj) => {
+      console.log(obj);
       if (obj.color == products.color) {
         obj.size.map(async (sizesObj) => {
           if (sizesObj.name == products.size) {
+            
             if (sizesObj.stock != 0) {
+              console.log(orderItems,"FSDFsfsa");
               res.status(200).json(orderItems);
             } else {
               res.status(500).json("Somthing Went Wrong");

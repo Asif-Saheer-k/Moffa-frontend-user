@@ -9,13 +9,12 @@ const PaytmChecksum = require("../utils/PaytmCecksum");
 const fromidable = require("formidable");
 const { v4: uuidv4 } = require("uuid");
 const https = require("https");
-const { Promise } = require("mongodb");
 const Razorpay = require("razorpay");
 
-// const razorpay = new Razorpay({
-//   key_id: "rzp_test_IYqnwXk3p7eSL2",
-//   key_secret: "YGQg37fRzHRIJJKMycxb2Blh",
-// });
+const razorpay = new Razorpay({
+  key_id: process.env.SECRET_KEY,
+  key_secret: process.env.SECRET_ID,
+});
 //login deatails
 //user register controller with otp verification
 const registerUser = asyncHandler(async (req, res) => {
@@ -408,7 +407,7 @@ const cheackOtp = asyncHandler(async (req, res) => {
 });
 
 //payment integration function
-const PaytmIntegration = asyncHandler(async(req, res) => {
+const PaytmIntegration = asyncHandler(async (req, res) => {
   let Amount = req.body.totamAmount;
   const ID = req.body.CUST_ID;
   const Name = req.body.Name;
@@ -604,7 +603,7 @@ const Callbackfunction = asyncHandler((req, res) => {
   console.log("callback");
   const from = new fromidable.IncomingForm();
   from.parse(req, (err, field, file) => {
-  console.log(field,"FSDFSFS");
+    console.log(field, "FSDFSFS");
     var paytmChecksum = "";
     const received_data = field;
     var paytmParams = {};
@@ -675,7 +674,10 @@ const Callbackfunction = asyncHandler((req, res) => {
 
           post_res.on("end", async function () {
             const result = JSON.parse(response);
-            console.log(result.body.resultInfo.resultStatus,"LLLLLLLLLLLLLLLLLLL");
+            console.log(
+              result.body.resultInfo.resultStatus,
+              "LLLLLLLLLLLLLLLLLLL"
+            );
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
               const ID = req.session.orderProducts.CUST_ID;
               const User = req.session.orderProducts.user;
@@ -1520,7 +1522,7 @@ const verifyWalletAmount = asyncHandler((req, res) => {
           // hostname: "securegw-stage.paytm.in",
 
           /* for Production */
-          hostname: 'securegw.paytm.in',
+          hostname: "securegw.paytm.in",
 
           port: 443,
           path: "/v3/order/status",
@@ -1542,14 +1544,17 @@ const verifyWalletAmount = asyncHandler((req, res) => {
           });
           post_res.on("end", async function () {
             const result = JSON.parse(response);
-            console.log(result.body.resultInfo.resultStatus,"LLLLLLLLLLLLLLLLLLL");
+            console.log(
+              result.body.resultInfo.resultStatus,
+              "LLLLLLLLLLLLLLLLLLL"
+            );
             if (result.body.resultInfo.resultStatus == "TXN_SUCCESS") {
               console.log(ID, amount, "session error");
               const updateAmount = await db
                 .get()
                 .collection(collection.WHOLESALER_COLLECTION)
                 .updateOne(
-                  { CUST_ID: ID }, 
+                  { CUST_ID: ID },
                   { $inc: { wallet: parseInt(amount) } }
                 );
               return res.redirect("/my-account");
@@ -1566,27 +1571,261 @@ const verifyWalletAmount = asyncHandler((req, res) => {
     }
   });
 });
-const razorpayIntegration = asyncHandler(async (req, res) => {
-  const ammount = 500;
-  const currency = "INR";
-  const payment_capture = 1;
-  const options = {
-    amount: ammount.toString(),
-    currency,
-    receipt: uuidv4(),
-    payment_capture,
+const createOrderObjct = asyncHandler(async (req, res) => {
+  let Amount = req.body.totamAmount;
+  const ID = req.body.CUST_ID;
+  const Name = req.body.Name;
+  const Pincode = req.body.Postcode;
+  const LastName = req.body.LastName;
+  const StreetAddress = req.body?.StreetAddress;
+  const Apartment = req.body?.Apartment;
+  const TownCity = req.body.TownCity;
+  const PhoneNumber = req.body.PhoneNumber;
+  const Email = req.body.Email;
+  const message = req.body?.message;
+  const State = req.body.State;
+  const user = req.body.user;
+  const DeliveyCharge = req.body.DeliveyCharge;
+  const DeliveryType = req.body.DeliveryType;
+  var Role = "user";
+  if (!user) {
+    Role = "wholesaler";
+    var Applywallet = req.body?.Applywallet;
+    if (Applywallet > 0 && Applywallet < Amount) {
+      Amount = Amount - Applywallet;
+      req.session.Applywallet = Applywallet;
+    }
+  }
+  const address = {
+    Name,
+    LastName,
+    StreetAddress,
+    Apartment,
+    State,
+    TownCity,
+    Pincode,
+    PhoneNumber,
+    Email,
+    message,
   };
-  const response = await razorpay.orders.create(options);
-  console.log(response);
-  if (response) {
-    console.log(response);
-    res.status(200).json({
-      id: response.id,
-      currency: response.currency,
-      ammount: response.ammount,
-    });
+  //add address user collection
+  const addAddress = await db
+    .get()
+    .collection(collection.USER_COLLECTION)
+    .updateOne({ CUST_ID: ID }, { $set: { Address: address } });
+  await db
+    .get()
+    .collection(collection.WHOLESALER_COLLECTION)
+    .updateOne(
+      { CUST_ID: ID },
+      {
+        $set: { Address: address },
+      }
+    );
+  //address storing
+  req.session.Address = address;
+  //order product storing in seesion
+  const OrderProductDeatails = req.body.OderProducts;
+  //create oder id functin
+  let OrdersId = await db
+    .get()
+    .collection(collection.ORDER_COLLECTION)
+    .find()
+    .sort({ _id: -1 })
+    .limit(1)
+    .toArray();
+  let OrderId;
+  if (OrdersId[0]?.Id) {
+    OrderId = OrdersId[0].Id + 1;
   } else {
-    console.log(response);
+    OrderId = 130001;
+  }
+  //oder producting deatails storing array
+  const OderProducts = [];
+  //oder product deatails
+  OrderProductDeatails.map(async (Product) => {
+    const obj = {
+      ProductID: Product.id,
+      quantity: Product.quantity,
+      color: Product.selectedProductColor,
+      size: Product.selectedProductSize,
+    };
+    OderProducts.push(obj);
+  });
+  //increasing sales count
+  OderProducts.map(async (items) => {
+    await db
+      .get()
+      .collection(collection.PRODUCT_COLLECTION)
+      .updateOne({ id: items.ProductID }, { $inc: { saleCount: 1 } });
+  });
+  const date = new Date().toLocaleDateString();
+  //create order object
+  if (Applywallet > 0) {
+    const OrderObject = {
+      Id: OrderId,
+      CUST_ID: ID,
+      Total: Amount,
+      Product: OderProducts,
+      Address: address,
+      Date: date,
+      user: user,
+      role: Role,
+      DeliveyCharge: DeliveyCharge,
+      DeliveryType: DeliveryType,
+      wallet: Applywallet,
+      status: "Pending",
+      Payment: "Pending",
+    };
+    req.session.orderProducts = OrderObject;
+  } else {
+    const OrderObject = {
+      Id: OrderId,
+      CUST_ID: ID,
+      Total: Amount,
+      Product: OderProducts,
+      Address: address,
+      Date: date,
+      user: user,
+      role: Role,
+      DeliveyCharge: DeliveyCharge,
+      DeliveryType: DeliveryType,
+      status: "Pending",
+      Payment: "Pending",
+    };
+    req.session.orderProducts = OrderObject;
+  }
+  // storing order object in session
+  // req.session.orderProducts = OrderObject;
+  //find quantity function
+  const orderItems = req.session.orderProducts;
+  const uuid = uuidv4();
+  OderProducts.map(async (products) => {
+    const product = await db
+      .get()
+      .collection(collection.PRODUCT_COLLECTION)
+      .findOne({ id: products.ProductID });
+    product.variation.map((obj) => {
+      if (obj.color == products.color) {
+        obj.size.map(async (sizesObj) => {
+          if (sizesObj.name == products.size) {
+            if (sizesObj.stock != 0) {
+              res.status(200).json(orderItems);
+            } else {
+              res.status(500).json("Somthing Went Wrong");
+            }
+          }
+        });
+      }
+    });
+  });
+});
+const razorpayIntegration = asyncHandler(async (req, res) => {
+  const orderObject = req.session.orderProducts;
+  const amount = orderObject.Total;
+  try {
+    const options = {
+      amount: amount * 100, // amount in smallest currency unit
+      currency: "INR",
+      receipt: "receipt_order_74394",
+    };
+    const order = await razorpay.orders.create(options);
+    if (!order) return res.status(500).send("Some error occured");
+    res.status(200).json(order);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+});
+const rezorpayOrder = asyncHandler(async (req, res) => {
+  const ID = req.session.orderProducts.CUST_ID;
+  const User = req.session.orderProducts.user;
+  let Applywallet = req.session?.Applywallet;
+  if (!User && Applywallet > 0) {
+    const Apply = await db
+      .get()
+      .collection(collection.WHOLESALER_COLLECTION)
+      .updateOne({ CUST_ID: ID }, { $inc: { wallet: -parseInt(Applywallet) } });
+  }
+  req.session.orderProducts.status = "Pending";
+  req.session.orderProducts.Payment = "Success";
+  const order = req.session.orderProducts;
+  order.status = "Pending";
+  order.Payment = "Success";
+  order.dateIso = new Date();
+
+  order.Product.map(async (products) => {
+    const product = await db
+      .get()
+      .collection(collection.PRODUCT_COLLECTION)
+      .findOne({ id: products.ProductID });
+    product.variation.map(async (obj, indexes) => {
+      if (obj.color == products.color) {
+        obj.size.map(async (sizesObj, index) => {
+          if (sizesObj.name == products.size) {
+            console.log(sizesObj.stock);
+            console.log(products.quantity);
+            const updateStock = sizesObj.stock - products.quantity;
+            if (updateStock == 0) {
+              const obj = {
+                ProductID: products.ProductID,
+                color: products.color,
+                size: products.size,
+                stock: updateStock,
+                variationindex: indexes,
+                sizeindex: index,
+              };
+              await db
+                .get()
+                .collection(collection.STOCK_UPDATION_COLLECTION)
+                .insertOne(obj);
+            }
+
+            if (updateStock >= 0) {
+              const update = await db
+                .get()
+                .collection(collection.PRODUCT_COLLECTION)
+                .updateOne(
+                  {
+                    id: products.ProductID,
+                    "variation.color": products.color,
+                    "variation.size.name": products.size,
+                  },
+                  {
+                    $set: {
+                      [`variation.${indexes}.size.${index}.stock`]: updateStock,
+                    },
+                  }
+                );
+            }
+          }
+        });
+      }
+    });
+  });
+  const success = await db
+    .get()
+    .collection(collection.ORDER_COLLECTION)
+    .insertOne(order);
+  if (success) {
+    req.session.orderProducts = null;
+    req.session.Applywallet = null;
+    res.status(200).json("Success");
+  } else {
+    res.status(400).json("Somthing Went Wrong");
+  }
+});
+const deleteuserCart = asyncHandler(async (req, res) => {
+  const userid = req.body.userID;
+  const deleteCart = await db
+    .get()
+    .collection(collection.CART_COLLECTION)
+    .deleteOne({
+      userId: userid,
+    });
+  if (deleteCart) {
+    res.status(200).json("Success");
+  } else {
+    res.status(500).json("Somthing went wrong");
   }
 });
 module.exports = {
@@ -1613,4 +1852,7 @@ module.exports = {
   verifyWalletAmount,
   removeProductCart,
   razorpayIntegration,
+  rezorpayOrder,
+  createOrderObjct,
+  deleteuserCart,
 };

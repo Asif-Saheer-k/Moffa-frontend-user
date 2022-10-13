@@ -31,7 +31,10 @@ const {
   getCartProduct,
   addToCart,
   removeProductCart,
-  razorpayIntegration
+  razorpayIntegration,
+  rezorpayOrder,
+  createOrderObjct,
+  deleteuserCart
 } = require("../controllers/userControllers");
 const { verifyToken } = require("../middleware/tokenVerification");
 //login routes using email,pssword
@@ -82,8 +85,14 @@ router.route("/transaction").post(verifyWalletAmount);
 router.route('/view-cart-produts/:id').get(getCartProduct)
 //remove cart produts
 router.route('/dlete-cart-produts').post(removeProductCart)
+//all products delete form cart after order succes
+router.route('/dlete-cart').post(deleteuserCart)
 //razorpay integration
 router.route('/razorpay').post(razorpayIntegration)
+//success in case of order success
+router.route('/razorpay-payment/success').post(rezorpayOrder)
+//create order object
+router.route('/create-order-object').post(createOrderObjct)
 
 module.exports = router;
-  
+   

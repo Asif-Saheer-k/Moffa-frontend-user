@@ -22,7 +22,7 @@ const razorpay = new Razorpay({
 const registerUser = asyncHandler(async (req, res) => {
   req.session.userDeatails = req.body;
   const OTP = Math.random().toFixed(6).split(".")[1];
-  
+
   req.session.userDeatails.otp = OTP;
   const phoneNumber = req.session.userDeatails.phone;
   // Phone number cheacking in database
@@ -1935,6 +1935,28 @@ const rezorpayOrder = asyncHandler(async (req, res) => {
       }
     });
   });
+  let OrdersId = await db
+    .get()
+    .collection(collection.ORDER_COLLECTION)
+    .find()
+    .sort({ _id: -1 })
+    .limit(1)
+    .toArray();
+  let OrderId;
+  let InvoceNO;
+  if (OrdersId[0]?.Id) {
+    OrderId = OrdersId[0].Id + 1;
+    const PR = OrdersId[0].InvoceNO.slice(5);
+    const inc = parseInt(PR) + 1;
+    InvoceNO = "MFA00" + inc;
+  } else {
+    OrderId = 130001;
+    InvoceNO = "MFA" + 001;
+  }
+  console.log(OrderId,"d;lklk");
+  order["Id"] = OrderId;
+  order["InvoceNO"] = InvoceNO;
+  console.log(order);
   const success = await db
     .get()
     .collection(collection.ORDER_COLLECTION)

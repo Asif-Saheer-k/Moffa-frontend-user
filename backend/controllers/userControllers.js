@@ -1953,7 +1953,6 @@ const rezorpayOrder = asyncHandler(async (req, res) => {
     OrderId = 130001;
     InvoceNO = "MFA" + 001;
   }
-  console.log(OrderId,"d;lklk");
   order["Id"] = OrderId;
   order["InvoceNO"] = InvoceNO;
   console.log(order);
@@ -2043,14 +2042,14 @@ const CheckUserId = asyncHandler(async (req, res) => {
     .findOne({ CUST_ID: parseInt(userid) });
 
   if (user) {
-    res.status(200).json("success");
+    res.status(200).json(user);
   } else {
     const wholeSaler = await db
       .get()
       .collection(collection.WHOLESALER_COLLECTION)
       .findOne({ CUST_ID: parseInt(userid) });
     if (wholeSaler) {
-      res.status(200).json("success");
+      res.status(200).json(wholeSaler);
     } else {
       res.status(200).json("failed");
     }

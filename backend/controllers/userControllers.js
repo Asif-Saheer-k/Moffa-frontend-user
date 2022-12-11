@@ -255,6 +255,7 @@ const loginUser = asyncHandler(async (req, res) => {
 const VerifyPhone = asyncHandler(async (req, res) => {
   const phoneNumber = req.body.phone;
   const OTP = Math.random().toFixed(6).split(".")[1];
+  console.log(OTP);
   const userDeatails = await db
     .get()
     .collection(collection.USER_COLLECTION)
@@ -1639,7 +1640,7 @@ const createOrderObjct = asyncHandler(async (req, res) => {
   const Apartment = req.body?.Apartment;
   const TownCity = req.body.TownCity;
   const PhoneNumber = req.body.PhoneNumber;
-  const Email = req.body.Email;
+  const Email = req.body?.Email;
   const message = req.body?.message;
   const State = req.body.State;
   const user = req.body.user;
@@ -1651,7 +1652,7 @@ const createOrderObjct = asyncHandler(async (req, res) => {
     const FromStreetAddress = req.body?.FromStreetAddress;
     const FromTownCity = req.body.FromTownCity;
     const FromPhoneNumber = req.body.FromPhoneNumber;
-    const FromEmail = req.body.FromEmail;
+    const FromEmail = req.body?.FromEmail;
     const FromState = req.body.FromState;
     fromAddress = {
       FromName,
@@ -1935,6 +1936,21 @@ const rezorpayOrder = asyncHandler(async (req, res) => {
       }
     });
   });
+
+  let smsphone;
+  if (order.user) {
+    const Take = await db
+      .get()
+      .collection(collection.USER_COLLECTION)
+      .findOne({ CUST_ID: parseInt(order.CUST_ID) });
+    smsphone = Take.phone;
+  } else {
+    const Take = await db
+      .get()
+      .collection(collection.WHOLESALER_COLLECTION)
+      .findOne({ CUST_ID: parseInt(order.CUST_ID) });
+    smsphone = Take.phone;
+  }
   let OrdersId = await db
     .get()
     .collection(collection.ORDER_COLLECTION)
@@ -1955,13 +1971,15 @@ const rezorpayOrder = asyncHandler(async (req, res) => {
   }
   order["Id"] = OrderId;
   order["InvoceNO"] = InvoceNO;
-  console.log(order);
+  order["smsphone"] = smsphone;
   const success = await db
     .get()
     .collection(collection.ORDER_COLLECTION)
     .insertOne(order);
   if (success) {
-    sms.sendOrderPlacedSMS(order.Id, order.Address.PhoneNumber);
+    if (smsphone) {
+      sms.sendOrderPlacedSMS(OrderId,smsphone);
+    }
     req.session.orderProducts = null;
     req.session.Applywallet = null;
     res.status(200).json("Success");
@@ -2055,7 +2073,6 @@ const CheckUserId = asyncHandler(async (req, res) => {
     }
   }
 });
-
 module.exports = {
   addToCart,
   registerUser,
